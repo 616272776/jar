@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -28,6 +29,7 @@ public class DemoJarMainApplication {
     private static ApplicationContext ctx;
     private static DefaultListableBeanFactory defaultListableBeanFactory;
     private static Class myClass;
+    private URLClassLoader myClassLoader;
 
     public static void main(String[] args) {
         //获取context.
@@ -58,15 +60,17 @@ public class DemoJarMainApplication {
     }
 
     @RequestMapping("/delete")
-    public void delete() {
+    public void delete() throws IOException {
         defaultListableBeanFactory.removeBeanDefinition("testService");
+        myClassLoader.close();
+        System.gc();
         System.out.println("已删除");
     }
 
     private void loadBean(Class clazz) {
 
-        //获取BeanFactory
-        DefaultListableBeanFactory defaultListableBeanFactory = (DefaultListableBeanFactory) ctx.getAutowireCapableBeanFactory();
+//        //获取BeanFactory
+//        DefaultListableBeanFactory defaultListableBeanFactory = (DefaultListableBeanFactory) ctx.getAutowireCapableBeanFactory();
 
         //创建bean信息
         BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(clazz);
@@ -76,6 +80,7 @@ public class DemoJarMainApplication {
 //        beanDefinitionBuilder.addConstructorArgValue(1024*1024*1024);
         //动态注册bean
         defaultListableBeanFactory.registerBeanDefinition("testService", beanDefinitionBuilder.getBeanDefinition());
+
     }
 
     private static void loadJar(String jarPath) {
@@ -101,9 +106,9 @@ public class DemoJarMainApplication {
             method.setAccessible(accessible);
         }
     }
-    private static void load() throws MalformedURLException, ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+    private void load() throws MalformedURLException, ClassNotFoundException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
         URL url = new URL("http://47.100.0.69:8080/files/test.jar");
-        URLClassLoader myClassLoader = new URLClassLoader( new URL[] { url } );
+        myClassLoader = new URLClassLoader( new URL[] { url } );
         myClass = myClassLoader.loadClass("com.test.jar.Play");
 //        Object test=myClass.newInstance();
 //        Method m = test.getClass().getMethod("play");
